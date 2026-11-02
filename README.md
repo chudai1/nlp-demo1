@@ -69,7 +69,7 @@ BERT 微调经典学习率，更新步长适中，既能快速适配下游 15 �
 
 ### 实验组 3：Batch Size 对照实验（固定 lr=2e-5，dropout=0.2）
 
-Batch Size 决定单次送入模型的样本数量，影响梯度估计的噪声、显存占用、收敛速度：小 batch 梯度噪声大，有一定正则效果；大 batch 梯度更平滑，但是需要更多显存，同时容易过拟合。
+Batch Size 决定单次送入模型的样本数量，影响梯度估计的噪声、显存占用、收敛速度：小 batch 梯度噪声大，有一定正则效果。
 实验组：batch_size=8 / 16
 <img width="1007" height="478" alt="1793509875215" src="https://github.com/user-attachments/assets/bbcd88e3-982d-4feb-9194-6c98d35e3e46" />
 <img width="330" height="236" alt="1793509876800" src="https://github.com/user-attachments/assets/7053db42-566f-4bdc-b2d9-d220c5e1cb0d" />
