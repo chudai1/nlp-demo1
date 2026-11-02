@@ -39,6 +39,8 @@
 
 Dropout 作用：训练时随机失活部分神经元，打破特征共适应，降低模型过拟合风险；Dropout 过小容易过拟合，过大则会过度抑制有效特征，带来欠拟合。
 实验组：dropout=0.2 / 0.3 / 0.4
+<img width="1011" height="470" alt="1793509864831" src="https://github.com/user-attachments/assets/6d314cea-27af-49fe-812a-7e79fe979530" />
+<img width="325" height="208" alt="1793509870255" src="https://github.com/user-attachments/assets/b45bcf40-6e99-449d-880f-a27c392d928c" />
 
 1. **dropout=0.2**
 模型保留更多神经元参与前向传播，可学习特征更充分，拟合能力强；但少量种子下容易出现验证集和测试集差距偏大，轻微过拟合。指标均值较高，标准差中等，是本组里性能上限最高的一组。
@@ -53,6 +55,8 @@ Dropout 作用：训练时随机失活部分神经元，打破特征共适应，
 
 学习率是微调 BERT 最核心参数：预训练 BERT 权重本身已经学到通用中文语义，学习率不能太大（会破坏预训练知识，震荡不收敛），也不能太小（收敛极慢，10 轮内无法拟合）。
 实验组：lr=1e-5 / 2e-5 / 3e-5
+<img width="995" height="465" alt="1793509872055" src="https://github.com/user-attachments/assets/119e4c30-4eba-442f-897f-e3c837c8c938" />
+<img width="324" height="223" alt="1793509873624" src="https://github.com/user-attachments/assets/5d08ced1-a41e-41bf-82c7-a1eb516c8001" />
 
 1. **lr=1e-5**
 学习率偏小，权重更新步长很小，模型收敛速度慢，在 10 个 epoch 内拟合不充分，训练损失下降平缓，测试集各项指标偏低；优点是训练过程十分平稳，几乎不会出现 loss 震荡。适合算力充足、允许长时间训练的场景，本实验 epoch 上限 10 轮，该学习率发挥受限。
@@ -66,16 +70,16 @@ BERT 微调经典学习率，更新步长适中，既能快速适配下游 15 �
 ### 实验组 3：Batch Size 对照实验（固定 lr=2e-5，dropout=0.2）
 
 Batch Size 决定单次送入模型的样本数量，影响梯度估计的噪声、显存占用、收敛速度：小 batch 梯度噪声大，有一定正则效果；大 batch 梯度更平滑，但是需要更多显存，同时容易过拟合。
-实验组：batch_size=8 / 16 / 32
+实验组：batch_size=8 / 16
+<img width="1007" height="478" alt="1793509875215" src="https://github.com/user-attachments/assets/bbcd88e3-982d-4feb-9194-6c98d35e3e46" />
+<img width="330" height="236" alt="1793509876800" src="https://github.com/user-attachments/assets/7053db42-566f-4bdc-b2d9-d220c5e1cb0d" />
 
 1. **batch_size=8**
 批次小，梯度估计随机性更强，自带隐式正则，不容易过拟合；单轮训练耗时更长，显存占用低。缺点是梯度方向波动大，收敛曲线抖动明显，指标均值略低于 bs=16。适合显存不足的硬件环境。
 2. **batch_size=16（基线）**
 梯度估计噪声适中，训练速度、显存开销、模型性能三者平衡，是本组综合表现最好的批次大小。
-3. **batch_size=32**
-单次梯度由更多样本计算得到，梯度方向稳定，训练曲线平滑，单轮训练速度更快；但是梯度噪声低，正则效应减弱，更容易过拟合，验证集和测试集差距拉大，同时 GPU 显存占用显著上升，对显卡压力更高。
 
-  小结：batch_size=16 综合最优；8 适合显存紧张场景，32 训练更快但过拟合风险上升。
+  小结：batch_size=16 综合最优；8 适合显存紧张场景。
 
 ## 四、最优参数组合确定
 
