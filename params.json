@@ -1,0 +1,11 @@
+{
+    "model_name": "bert-base-chinese",
+    "max_length": 128,
+    "batch_size": 16,
+    "lr": 2e-5,
+    "max_epochs": 10,
+    "patience": 3,
+    "seed_list": [42,66,99],
+    "dropout": 0.2,
+    "max_norm": 1.0
+}
