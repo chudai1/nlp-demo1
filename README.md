@@ -73,9 +73,13 @@
 ### 3.1 模型
 
 ```python
-pooled = BertModel.from_pretrained("bert-base-chinese")(...).pooler_output   # [B, 768]
-logits = Linear(768, 15)(Dropout(p)(pooled))                                # [B, 15]
-loss   = CrossEntropyLoss(logits, labels)
+# 1. BERT 主干提取 [CLS] 句向量特征（维度由模型自身配置决定，如 768）
+pooled = BertModel.from_pretrained(model_name).pooler_output   # [B, hidden_size]
+# 2. 动态获取特征维度并进行分类映射
+hidden_size = self.bert.config.hidden_size
+logits = Linear(hidden_size, num_labels)(Dropout(p)(pooled))   # [B, num_labels]
+# 3. 计算交叉熵损失
+loss = CrossEntropyLoss(logits.view(-1, num_labels), labels.view(-1))
 ```
 
 - 取 **`pooler_output`**（`[CLS]` 经 `Linear + Tanh` 后的句子级向量），而非对所有 token 做 mean pooling。标题短、关键信息集中，`[CLS]` 在预训练阶段已被训练为聚合句义；实现上也不必处理 padding mask 的加权平均。
@@ -135,7 +139,7 @@ loss   = CrossEntropyLoss(logits, labels)
 两个未纳入的点：
 
 - **`bs=32`**：未实测。按显存估算 OOM 风险较高（`max_length=128` 下 batch 翻倍、激活显存翻倍）；强行缩短序列又会引入「截断长度」这一额外变量。若需更大 batch，可用梯度累积（bs=16 × 累积 2 步）模拟。
-- **`lr=5e-5`**：3e-5 已出现明显震荡，继续加大只会放大不稳定。
+- **`lr=4e-5`**：3e-5 已出现明显震荡，继续加大只会放大不稳定。
 
 ### 4.4 评估协议
 
@@ -245,7 +249,7 @@ Micro指标仅反映全局正确率，无法体现类别均衡性。部分实验
 - 两组离群实验结果可以佐证上述机制：
   - dp=0.3，seed=99：最优轮次 Acc 为 82.50%，Macro-F1 仅 76.54%，二者差距 5.96 pp；
   - dp=0.4，seed=42：Acc 为 83.00%，Macro-F1 仅 76.40%。
-  两组模型准确率均处于正常区间，但 Macro-F1 显著下跌。按15分类的宏平均规则折算，5.96 pp 的差距等价于所有类别合计损失约89个F1百分点；如果性能损失集中在3个稀有类别上，平均每类F1下降约30个百分点（例如从0.6降至0.3），这和数据集里类别114仅14条验证样本的长尾分布情况吻合。
+  两组模型准确率均处于正常区间，但 Macro-F1 显著下跌。
 
 - 进一步提高 dropout 无法带来泛化性能提升：dropout=0.4 的末轮训练损失（0.071）是 dropout=0.1（0.029）的2.4倍，最优早停轮次也从6.7轮提前至4.0轮。但该现象不能直接判定为欠拟合：dropout 本身会抬高训练损失基线；dropout=0.4 的末轮验证损失（0.909）反而是四组里最低，验证集 Acc（83.10%）和 dropout=0.1（83.17%）基本持平。性能退化集中体现在 Macro-F1（79.93）与种子间标准差（2.14）上，说明强 Dropout 抑制的是稀有类的判别特征，而不是模型整体的拟合能力。综合指标变化可以判断：强 Dropout 并没有削弱模型对高频大类的拟合能力，而是破坏了稀有类微弱的特征表示，最终表现为 Macro-F1 大幅下降、不同种子之间结果剧烈震荡。
 
@@ -424,17 +428,6 @@ seed42 表现更好，保存 checkpoint (Acc: 83.20%)
 ```
 
 每组 3 个种子约需 8–12 min；21 次运行全量约 1 h。
-
-### 6.5 已知问题
-
-|                       现象                       |                              原因                               |                          处理                           |
-| ------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------- |
-| `OSError: We couldn't connect to huggingface.co` | 代码强制离线                                                    | 先把模型缓存到本地，或临时去掉 `HF_HUB_OFFLINE`         |
-| `CUDA out of memory`                             | bs 过大 / 序列过长                                              | 保持 `bs=16, max_length=128`；需要更大 batch 用梯度累积 |
-| SwanLab 上传失败但训练继续                       | 网络问题                                                        | 本地 `swanlog/` 仍完整，事后可离线解析                  |
-| checkpoint 单文件 1.17 GB                        | 同时保存了 optimizer 状态                                       | 仅推理时可只存 `model_state_dict`（约 390 MB）          |
-| `swanlab watch` 读不到旧日志                     | 0.10 的本地看板只认 `runs.swanlab`，旧版离线 `run-*` 目录不兼容 | 用云端看板查看，或写脚本直接解析 `run-*/run-*.swanlab`  |
-
 
 ## 7. 项目结构
 
