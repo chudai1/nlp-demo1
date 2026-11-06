@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 def read_data(path):
     data_list = []
     unique_codes = set()
+    
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
@@ -12,30 +13,21 @@ def read_data(path):
             if len(part_data) == 5:
                 unique_codes.add(part_data[1])
                 
-    sorted_codes = sorted(list(unique_codes))
-    dynamic_label_id = {code: idx for idx, code in enumerate(sorted_codes)}
-    num_classes = len(dynamic_label_id)
-
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
-            if not line: 
-                continue
+            if not line: continue
             part_data = line.split("_!_")
-            if len(part_data) != 5: 
-                continue
+            if len(part_data) != 5: continue
             code = part_data[1]
             news_text = part_data[3]
-            label = dynamic_label_id.get(code, -1)
-            if label == -1: 
-                continue
+            data_list.append({"text": news_text, "code": code})
             
-            data_list.append({"text": news_text, "label": label})
-            
-    return data_list, dynamic_label_id, num_classes
+    return data_list, unique_codes
+
 
 class TextDataset(Dataset):
-    def __init__(self, data_list, tokenizer, max_length=128):
+    def __init__(self, data_list, tokenizer, max_length):
         self.data_list = data_list
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -45,29 +37,26 @@ class TextDataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.data_list[idx]
-        text = item["text"]
-        label = item["label"]
-        
-        encoding = self.tokenizer(
-            text,
-            max_length=self.max_length,
-            truncation=True,
-        )
         return {
-            "input_ids": encoding["input_ids"],
-            "attention_mask": encoding["attention_mask"],
-            "label": label
+            "text": item["text"], 
+            "label": item["label"],
+            "tokenizer": self.tokenizer,  
+            "max_length": self.max_length 
         }
 
-def collate_fn(batch, tokenizer):
+def collate_fn(batch):
 
-    texts = [item["input_ids"] for item in batch]
+    tokenizer = batch[0]["tokenizer"]
+    max_length = batch[0]["max_length"]
+    
+    texts = [item["text"] for item in batch]
     labels = [item["label"] for item in batch]
     
-    # 动态补齐
-    encoding = tokenizer.pad(
-        {"input_ids": texts},
-        padding="longest", 
+    encoding = tokenizer(
+        texts,
+        max_length=max_length,
+        padding="longest",  
+        truncation=True,
         return_tensors="pt"
     )
     
