@@ -1,6 +1,5 @@
 import os
 import torch
-import gc
 from tqdm import tqdm
 import swanlab
 from transformers import get_linear_schedule_with_warmup
@@ -9,21 +8,24 @@ from utils import evaluate
 from model import TextClassifier
 
 def train_and_evaluate_seed(seed, train_loader, dev_loader, test_loader, num_classes):
-    model = TextClassifier(num_labels=num_classes).to(config.device) 
+    model = TextClassifier(num_labels=num_classes).to(config.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
     num_training_steps = len(train_loader) * config.max_epochs
     scheduler = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=int(0.1 * num_training_steps), num_training_steps=num_training_steps
+        optimizer, 
+        num_warmup_steps=int(config.warmup_ratio * num_training_steps), 
+        num_training_steps=num_training_steps
     )
 
-    best_dev_acc = -1.0 
-    best_model_path = os.path.join(config.base_dir, f"best_bert_seed{seed}.pth")
+    best_dev_acc = -1.0 #最优
+    best_model_path = os.path.join(config.output_dir, f"best_bert_seed{seed}.pth")
     no_improve = 0
     stop_flag = False
 
     for epoch in range(config.max_epochs):
-        if stop_flag:
-            break  
+        if stop_flag: 
+            break
+        
         model.train()
         sum_loss = 0.0
         total_samples = 0
@@ -38,43 +40,48 @@ def train_and_evaluate_seed(seed, train_loader, dev_loader, test_loader, num_cla
             output = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
             l = output["loss"]
             l.backward()
-            
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.max_norm)
             optimizer.step()
             scheduler.step()
 
             sum_loss += l.item() * labels.size(0) 
             total_samples += labels.size(0)
-            progress.set_postfix({"loss": f"{l.item():.4f}"})
             
+            progress.set_postfix({"loss": f"{l.item():.4f}"})
             if step % 10 == 0:
                 swanlab.log({"train_loss": l.item()}, step=epoch * len(train_loader) + step)
 
-        avg_train_loss = sum_loss / total_samples
-        dev_acc, dev_loss, dev_p, dev_r, dev_f1 = evaluate(model, dev_loader, config.device)
-        
-        print(f"Epoch {epoch+1} | Train Loss: {avg_train_loss:.4f} | Dev Acc: {dev_acc*100:.2f}% | Dev F1: {dev_f1*100:.2f}% | Dev P: {dev_p*100:.2f}% | Dev R: {dev_r*100:.2f}%")
+        avg_train_loss = sum_loss / total_samples#验证
+        dev_metrics = evaluate(model, dev_loader, config.device, num_classes)
+
+        print(f"Epoch {epoch+1} | Train Loss: {avg_train_loss:.4f} | Dev Acc: {dev_metrics['acc']*100:.2f}% | Dev Macro-F1: {dev_metrics['macro_f1']*100:.2f}% | Dev Micro-F1: {dev_metrics['micro_f1']*100:.2f}%")
         
         swanlab.log({
             "epoch_train_loss": avg_train_loss,
-            "epoch_dev_acc": dev_acc,
-            "epoch_dev_f1": dev_f1,
-            "epoch_dev_loss": dev_loss,
-            "epoch_dev_p": dev_p,
-            "epoch_dev_r": dev_r
+            "epoch_dev_loss": dev_metrics['loss'],
+            "epoch_dev_acc": dev_metrics['acc'],
+            
+            # Macro 指标
+            "epoch_dev_macro_p": dev_metrics['macro_p'],
+            "epoch_dev_macro_r": dev_metrics['macro_r'],
+            "epoch_dev_macro_f1": dev_metrics['macro_f1'],
+            
+            # Micro 指标
+            "epoch_dev_micro_p": dev_metrics['micro_p'],
+            "epoch_dev_micro_r": dev_metrics['micro_r'],
+            "epoch_dev_micro_f1": dev_metrics['micro_f1']
         })
 
-        if dev_acc > best_dev_acc:
-            best_dev_acc = dev_acc
-            
-            checkpoint = {
+
+        if dev_metrics['acc'] > best_dev_acc:# 判断是否最优
+            best_dev_acc = dev_metrics['acc']
+            save_checkpoint = {
                 'epoch': epoch,
-                'model_state_dict': model.state_dict(),
+                'model_state_dict': model.state_dict(),#权重
                 'optimizer_state_dict': optimizer.state_dict(),
                 'best_acc': best_dev_acc
             }
-            
-            torch.save(checkpoint, best_model_path)
+            torch.save(save_checkpoint, best_model_path)
             print(f"seed{seed} 表现更好，保存 checkpoint (Acc: {best_dev_acc*100:.2f}%)")
             no_improve = 0
         else:
@@ -84,17 +91,12 @@ def train_and_evaluate_seed(seed, train_loader, dev_loader, test_loader, num_cla
                 stop_flag = True
 
     print("\n== 训练结束，加载最优权重做测试 ==")
-    checkpoint = torch.load(best_model_path, map_location=config.device, weights_only=False)
-    model.load_state_dict(checkpoint['model_state_dict']) 
+
+    load_checkpoint = torch.load(best_model_path, map_location=config.device, weights_only=False)
+    model.load_state_dict(load_checkpoint['model_state_dict']) 
     model.eval()
     
-    print(" 权重加载成功，开始跑测试集")
-    test_acc, test_loss, test_p, test_r, test_f1 = evaluate(model, test_loader, config.device)
+    test_metrics = evaluate(model, test_loader, config.device, num_classes)
+    print(f"seed {seed} 测试集 -> Acc: {test_metrics['acc']*100:.2f}% | Macro-F1: {test_metrics['macro_f1']*100:.2f}% | Micro-F1: {test_metrics['micro_f1']*100:.2f}%")
     
-    print(f"seed {seed} 测试集 -> Acc: {test_acc*100:.2f}% | F1: {test_f1*100:.2f}% | P: {test_p*100:.2f}% | R: {test_r*100:.2f}%")
-
-    model = model.cpu()
-    gc.collect()
-    torch.cuda.empty_cache()
-
-    return test_acc, test_f1, test_p, test_r
+    return test_metrics
