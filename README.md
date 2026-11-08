@@ -3,17 +3,16 @@
 # 中文新闻标题分类：BERT 微调与超参数消融
 
 
-![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python\&logoColor=white)
+<br>
 
-![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?logo=pytorch\&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white) 
+![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1-EE4C2C?logo=pytorch&logoColor=white) 
+![Transformers](https://img.shields.io/badge/Transformers-4.45.2-yellow) 
+![SwanLab](https://img.shields.io/badge/SwanLab-0.10.2-6A5ACD) 
+![Test Acc](https://img.shields.io/badge/Test%20Acc-83.08%25-brightgreen) 
+![Macro-F1](https://img.shields.io/badge/Macro--F1-81.98%25-blue)
 
-![Transformers](https://img.shields.io/badge/Transformers-4.45.2-yellow)
-
-![SwanLab](https://img.shields.io/badge/SwanLab-0.10.2-6A5ACD)
-
-![Test Acc](https://img.shields.io/badge/Test%20Acc-83.08%25-brightgreen)
-
-![Macro--F1](https://img.shields.io/badge/Macro--F1-81.98%25-blue)
+<br>
 
 [1. 项目概览](#1-项目概览) · [2. 数据集](#2-数据集) · [3. 方法](#3-方法) · [4. 实验设计](#4-实验设计) · [5. 结果与分析](#5-结果与分析) · [6. 复现指南](#6-复现指南) · [7. 项目结构](#7-项目结构)
 
