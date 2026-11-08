@@ -20,8 +20,8 @@ seed_list = params["seed_list"]
 dropout = params["dropout"]
 max_norm = params["max_norm"]
 warmup_ratio = params["warmup_ratio"]
-
-output_dir = os.path.join(base_dir, "outputs")
+run_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_lr{lr}_bs{batch_size}_dp{dropout}"
+output_dir = os.path.join(base_dir, "outputs", run_name)
 os.makedirs(output_dir, exist_ok=True)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
