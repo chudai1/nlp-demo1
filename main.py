@@ -58,7 +58,12 @@ if __name__ == "__main__":
         swanlab.init(
             project="demo1", 
             experiment_name=f"seed{seed}_lr{config.lr}_bs{config.batch_size}_dp{config.dropout}",
-            config={"lr": config.lr, "batch_size": config.batch_size, "dropout": config.dropout},
+            config={
+                "lr": config.lr, 
+                "batch_size": config.batch_size, 
+                "dropout": config.dropout,
+                "run_name": config.run_name  
+            },
             reinit=True   
         )
         
