@@ -54,7 +54,6 @@ nlp-demo1/
 ├── utils.py                 # set_seed / evaluate
 ├── main.py                  # 主入口，统筹 3 个种子
 ├── requirements.txt
-├── train_3k.txt / dev_1k.txt / test_1k.txt
 ```
 ## 2. 数据集
 
@@ -340,6 +339,7 @@ python main.py
   "max_norm": 1.0,
   "warmup_ratio": 0.1
 }
+```
 > **复现消融实验**：只需修改 `configs/params.json` 中的对应字段（如 `dropout` 改为 `0.2`，或 `lr` 改为 `1e-5`），再次运行 `python main.py` 即可。
 >
 > **产物保存**：每次运行会自动生成带时间戳的独立文件夹（`outputs/exp_YYYYMMDD_HHMMSS/`），模型权重与 SwanLab 本地日志均保存在内，互不覆盖。
