@@ -14,7 +14,7 @@
 
 <br>
 
-[1. 项目概览](#1-项目概览) · [2. 数据集](#2-数据集) · [3. 方法](#3-方法) · [4. 实验设计](#4-实验设计) · [5. 结果与分析](#5-结果与分析) · [6. 运行](#6-运行)
+[1. 项目概览](#1-项目概览) · [2. 数据集](#2-数据集) · [3. 方法](#3-方法) · [4. 实验设计](#4-实验设计) · [5. 结果与分析](#5-结果与分析) 
 </div>
 
 ---
@@ -55,6 +55,39 @@ nlp-demo1/
 ├── main.py                  # 主入口，统筹 3 个种子
 ├── requirements.txt
 ```
+
+## 1.4. 运行
+
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+依赖版本见 `requirements.txt`；一次运行依次训练 `[42, 66, 99]` 三个种子，结束后打印 `mean ± std` 汇总。
+
+
+
+交付配置：`lr = 2e-5`、`batch_size = 16`、`dropout = 0.1`、`max_length = 128`，完整参数见 `configs/params.json`：
+
+```json
+{
+  "model_name": "bert-base-chinese",
+  "max_length": 128,
+  "batch_size": 16,
+  "lr": 2e-5,
+  "max_epochs": 10,
+  "patience": 3,
+  "seed_list": [42, 66, 99],
+  "dropout": 0.1,
+  "max_norm": 1.0,
+  "warmup_ratio": 0.1
+}
+```
+> **复现消融实验**：只需修改 `configs/params.json` 中的对应字段（如 `dropout` 改为 `0.2`，或 `lr` 改为 `1e-5`），再次运行 `python main.py` 即可。
+>
+> **产物保存**：每次运行会自动生成带时间戳的独立文件夹（`outputs/exp_YYYYMMDD_HHMMSS/`），模型权重与 SwanLab 本地日志均保存在内，互不覆盖。
+
+
 ## 2. 数据集
 
 ### 2.1 基本情况
@@ -313,34 +346,5 @@ Micro 与 Macro 指标的互补性：
 
 ---
 
-## 6. 运行
 
-```bash
-pip install -r requirements.txt
-python main.py
-```
-
-依赖版本见 `requirements.txt`；一次运行依次训练 `[42, 66, 99]` 三个种子，结束后打印 `mean ± std` 汇总。
-
-
-
-交付配置：`lr = 2e-5`、`batch_size = 16`、`dropout = 0.1`、`max_length = 128`，完整参数见 `configs/params.json`：
-
-```json
-{
-  "model_name": "bert-base-chinese",
-  "max_length": 128,
-  "batch_size": 16,
-  "lr": 2e-5,
-  "max_epochs": 10,
-  "patience": 3,
-  "seed_list": [42, 66, 99],
-  "dropout": 0.1,
-  "max_norm": 1.0,
-  "warmup_ratio": 0.1
-}
-```
-> **复现消融实验**：只需修改 `configs/params.json` 中的对应字段（如 `dropout` 改为 `0.2`，或 `lr` 改为 `1e-5`），再次运行 `python main.py` 即可。
->
-> **产物保存**：每次运行会自动生成带时间戳的独立文件夹（`outputs/exp_YYYYMMDD_HHMMSS/`），模型权重与 SwanLab 本地日志均保存在内，互不覆盖。
 
