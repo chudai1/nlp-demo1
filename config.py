@@ -11,16 +11,10 @@ test_path = os.path.join(base_dir, "test_1k.txt")
 with open(os.path.join(base_dir, "configs", "params.json"), "r", encoding="utf-8") as f:
     params = json.load(f)
 
-model_name = params["model_name"]
-max_length = params["max_length"]
-batch_size = params["batch_size"]
-lr = params["lr"]
-max_epochs = params["max_epochs"]
-patience = params["patience"]
-seed_list = params["seed_list"]
-dropout = params["dropout"]
-max_norm = params["max_norm"]
-warmup_ratio = params["warmup_ratio"]
+# 把 params.json 的每个键注入为模块变量
+for key, value in params.items():
+    globals()[key] = value
+
 run_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_lr{lr}_bs{batch_size}_dp{dropout}"
 output_dir = os.path.join(base_dir, "outputs", run_name)
 os.makedirs(output_dir, exist_ok=True)
