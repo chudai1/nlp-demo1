@@ -2,6 +2,7 @@ import random
 import numpy as np
 import torch
 
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -11,32 +12,30 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 def evaluate(model, dataloader, device, num_classes):
     model.eval()
-    all_preds = []
-    all_labels = []
+    all_preds, all_labels = [], []
     sum_loss = 0.0
-    total_samples = 0 
+    total_samples = 0
 
     with torch.no_grad():
         for batch in dataloader:
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
-            labels = batch["label"].to(device)
+            labels = batch["labels"].to(device)
 
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            l = outputs["loss"]
-            batch_size = labels.size(0)
-            sum_loss += l.item() * batch_size 
-            total_samples += batch_size
-            preds = torch.argmax(outputs["logits"], dim=1)
-            
-            all_preds.append(preds.cpu())
+            loss = outputs["loss"]
+            sum_loss += loss.item() * labels.size(0)
+            total_samples += labels.size(0)
+
+            all_preds.append(torch.argmax(outputs["logits"], dim=1).cpu())
             all_labels.append(labels.cpu())
 
-    all_preds = torch.cat(all_preds)#预测
-    all_labels = torch.cat(all_labels)#真实
-   
+    all_preds = torch.cat(all_preds)
+    all_labels = torch.cat(all_labels)
+
     avg_loss = sum_loss / total_samples
     acc = (all_preds == all_labels).float().mean().item()
 
@@ -74,7 +73,7 @@ def evaluate(model, dataloader, device, num_classes):
         "macro_p": macro_p,
         "macro_r": macro_r,
         "macro_f1": macro_f1,
-        "micro_p": micro_p.item(),
-        "micro_r": micro_r.item(),
-        "micro_f1": micro_f1.item()
+        "micro_p": float(micro_p),
+        "micro_r": float(micro_r),
+        "micro_f1": float(micro_f1),
     }
