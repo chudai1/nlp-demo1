@@ -7,7 +7,7 @@ import swanlab
 import config
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
-from data import read_data, TextDataset, collate_fn
+from data import read_data, TextDataset
 from trainer import train_and_evaluate_seed
 from utils import set_seed
 
