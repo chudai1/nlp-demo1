@@ -49,7 +49,7 @@ class TextDataset(Dataset):
         encodings = self.tokenizer(
             texts,
             truncation=True,
-            padding="max_length",
+            padding="longest",
             max_length=self.max_length,
             return_tensors="pt",
         )
