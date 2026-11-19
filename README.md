@@ -145,7 +145,7 @@ loss = self.loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 | 梯度裁剪       | `max_norm = 1.0`                                                    | 每个 batch 在 `optimizer.step()` 前按全局范数裁剪，只缩放、不改变方向，抑制梯度爆炸                        |
 | Dropout    | 0.1（分类头前）                                                           | 唯一显式设置的正则超参，只作用于池化向量                                     |
 | Batch size | 16（train / dev / test 一致）                                            | 188 步/epoch；train `shuffle=True`，dev / test 固定顺序，`drop_last=False`；8 GB 显存（RTX 3070 Ti Laptop）实测稳定；`bs=32` 未实测，按显存估算 OOM 风险高 |
-| 最大轮数       | 10                                                                  | 21 个消融 run 实际跑 5–10 轮，共 166 轮，均值 7.9；下限 5 来自 `bs=8` 组设定 `max_epochs=5`，不是早停      |
+| 最大轮数       | 10                                                                  | 21 个消融 run 实际跑 5–10 轮，共 166 轮；下限 5 来自 `bs=8` 组设定 `max_epochs=5`，不是早停      |
 | 早停         | `patience = 3`                                                      | 监控 dev Acc，连续 3 轮未严格超过历史最优即停止                                                  |
 | 模型选择       | dev Acc 最高的 checkpoint                                              | 只在严格提升时覆盖保存，并列时保留更早 epoch；测试集不参与 run 内选择                                      |
 | 随机种子       | 42 / 66 / 99                                                        | `set_seed` 同时固定 random / numpy / torch / CUDA，并设 `cudnn.deterministic=True`，覆盖 3 次独立初始化与数据打乱 |
